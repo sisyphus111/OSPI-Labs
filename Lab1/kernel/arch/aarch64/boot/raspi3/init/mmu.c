@@ -17,14 +17,14 @@ typedef unsigned int u32;
 
 /* Physical memory address space: 0-1G */
 #define PHYSMEM_START   (0x0UL)
-#define PERIPHERAL_BASE (0x3F000000UL)
-#define PHYSMEM_END     (0x40000000UL)
+#define PERIPHERAL_BASE (0x3F000000UL) // 从0x3F000000开始是外设寄存器，即给设备分配的内存
+#define PHYSMEM_END     (0x40000000UL) // 1G物理内存
 
 /* The number of entries in one page table page */
 #define PTP_ENTRIES 512
 /* The size of one page table page */
 #define PTP_SIZE 4096
-#define ALIGN(n) __attribute__((__aligned__(n)))
+#define ALIGN(n) __attribute__((__aligned__(n))) // 对齐
 u64 boot_ttbr0_l0[PTP_ENTRIES] ALIGN(PTP_SIZE);
 u64 boot_ttbr0_l1[PTP_ENTRIES] ALIGN(PTP_SIZE);
 u64 boot_ttbr0_l2[PTP_ENTRIES] ALIGN(PTP_SIZE);
@@ -45,6 +45,7 @@ u64 boot_ttbr1_l2[PTP_ENTRIES] ALIGN(PTP_SIZE);
 
 #define SIZE_2M (2UL * 1024 * 1024)
 
+// 提取索引的辅助函数
 #define GET_L0_INDEX(x) (((x) >> (12 + 9 + 9 + 9)) & 0x1ff)
 #define GET_L1_INDEX(x) (((x) >> (12 + 9 + 9)) & 0x1ff)
 #define GET_L2_INDEX(x) (((x) >> (12 + 9)) & 0x1ff)
@@ -53,6 +54,8 @@ void init_kernel_pt(void)
 {
         u64 vaddr = PHYSMEM_START;
 
+        // 将boot_ttbr0_l0, boot_ttbr0_l1, boot_ttbr0_l2连接起来
+        // 形成三级页表结构（以2MB为粒度划分就用不着四级页表了）
         /* TTBR0_EL1 0-1G */
         boot_ttbr0_l0[GET_L0_INDEX(vaddr)] = ((u64)boot_ttbr0_l1) | IS_TABLE
                                              | IS_VALID | NG;
@@ -88,21 +91,46 @@ void init_kernel_pt(void)
         /* LAB 1 TODO 5 BEGIN */
         /* Step 1: set L0 and L1 page table entry */
         /* BLANK BEGIN */
+        vaddr = PHYSMEM_START + KERNEL_VADDR; // 内核虚拟地址：固定偏移
+        boot_ttbr1_l0[GET_L0_INDEX(vaddr)] = ((u64)boot_ttbr1_l1) | IS_TABLE
+                                             | IS_VALID | NG;
+        boot_ttbr1_l1[GET_L1_INDEX(vaddr)] = ((u64)boot_ttbr1_l2) | IS_TABLE
+                                             | IS_VALID | NG;
+        
         /* BLANK END */
 
         /* Step 2: map PHYSMEM_START ~ PERIPHERAL_BASE with 2MB granularity */
         /* BLANK BEGIN */
+        for (; vaddr < PERIPHERAL_BASE + KERNEL_VADDR; vaddr += SIZE_2M) {
+                boot_ttbr1_l2[GET_L2_INDEX(vaddr)] =
+                        (vaddr - KERNEL_VADDR) /* high mem, va - offset = pa */
+                        | UXN /* Unprivileged execute never */
+                        | ACCESSED /* Set access flag */
+                        | NG /* Mark as not global */
+                        | INNER_SHARABLE /* Shareability */
+                        | NORMAL_MEMORY /* Normal memory */
+                        | IS_VALID;
+        }
         /* BLANK END */
 
         /* Step 2: map PERIPHERAL_BASE ~ PHYSMEM_END with 2MB granularity */
         /* BLANK BEGIN */
+        for (vaddr = PERIPHERAL_BASE + KERNEL_VADDR; vaddr < PHYSMEM_END + KERNEL_VADDR; vaddr += SIZE_2M) {
+                boot_ttbr1_l2[GET_L2_INDEX(vaddr)] =
+                        (vaddr - KERNEL_VADDR) /* high mem, va - offset = pa */
+                        | UXN /* Unprivileged execute never */
+                        | ACCESSED /* Set access flag */
+                        | NG /* Mark as not global */
+                        | DEVICE_MEMORY /* Device memory */
+                        | IS_VALID;
+        }
         /* BLANK END */
         /* LAB 1 TODO 5 END */
 
         /*
          * Local peripherals, e.g., ARM timer, IRQs, and mailboxes
          *
-         * 0x4000_0000 .. 0xFFFF_FFFF
+         * 0x4000_0000 .. 0xFFFF_FFFF 1G-4G这3G内存是给本地外设用的
          * 1G is enough (for Mini-UART). Map 1G page here.
          */
         vaddr = KERNEL_VADDR + PHYSMEM_END;

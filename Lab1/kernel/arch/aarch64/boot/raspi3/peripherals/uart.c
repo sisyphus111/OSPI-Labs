@@ -85,10 +85,12 @@ static void early_uart_send(unsigned int c)
 		if (early_uart_lsr() & 0x20)
 			break;
 	}
+	// AUX_MU_IO_REG是数据寄存器，写入要发送的字符
 	early_put32(AUX_MU_IO_REG, c);
 }
 
 #else /* PL011 */
+// PL011是更高级的UART，支持FIFO缓冲和更高波特率
 
 void early_uart_init(void)
 {
@@ -123,14 +125,17 @@ void early_uart_init(void)
 	early_put32(RASPI3_PL011_CR, 1 | (1 << 8) | (1 << 9));
 }
 
+
 static unsigned int early_uart_fr(void)
 {
 	return early_get32(RASPI3_PL011_FR);
 }
 
+// 发送单个字符到串口
 static void early_uart_send(unsigned int c)
 {
 	/* Check if the send fifo is full. */
+	// 检查发送缓冲区是否就绪
 	while (early_uart_fr() & (1 << 5));
 	early_put32(RASPI3_PL011_DR, c);
 }
@@ -141,6 +146,15 @@ void uart_send_string(char *str)
 {
         /* LAB 1 TODO 3 BEGIN */
         /* BLANK BEGIN */
+
+		int i;
+		for (i = 0; str[i] != '\0'; i++) {
+			if (str[i] == '\n')
+				// 遇到换行符'\n'时，将其转换为标准的"\r\n"
+				early_uart_send('\r');
+			early_uart_send(str[i]);
+		}
+
         /* BLANK END */
         /* LAB 1 TODO 3 END */
 }

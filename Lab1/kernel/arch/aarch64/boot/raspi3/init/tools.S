@@ -70,6 +70,17 @@
 BEGIN_FUNC(arm64_elX_to_el1)
 	/* LAB 1 TODO 1 BEGIN */
 	/* BLANK BEGIN */
+
+	//get current exception level
+	// CurrentEL is a system register that holds the current exception level and the stack pointer being used.
+	// The exception level is indicated by bits [3:2] of this register.
+	// The possible values are:
+	// 00: EL0 (User mode)
+	// 01: EL1 (Kernel mode)
+	// 10: EL2 (Hypervisor mode)
+	// 11: EL3 (Secure monitor mode)
+	mrs x9, CurrentEL
+
 	/* BLANK END */
 	/* LAB 1 TODO 1 END */
 
@@ -89,6 +100,15 @@ BEGIN_FUNC(arm64_elX_to_el1)
 	// Set the return address and exception level.
 	/* LAB 1 TODO 2 BEGIN */
 	/* BLANK BEGIN */
+	adr x9, .Ltarget // 将标签 .Ltarget的地址加载到 x9寄存器
+	msr elr_el3, x9 // 将 x9的值（即 .Ltarget地址）写入 ELR_EL3寄存器,
+	// 也即 EL3 的异常返回地址寄存器,当执行 eret指令时，CPU 会跳转到 ELR_EL3中保存的地址继续执行
+	mov x9, SPSR_ELX_DAIF | SPSR_ELX_EL1H // 构造一个 ​SPSR（Saved Program Status Register）​​ 的值并存入 x9
+	// SPSR_ELX_EL1H：设置异常返回后的目标异常级别为 ​EL1，并使用 SP_EL1作为栈指针（EL1H表示 EL1 的 SP1模式）。
+    // SPSR_ELX_DAIF：屏蔽所有中断（DAIF位均为 1），确保返回 EL1 时中断处于关闭状态。
+	msr spsr_el3, x9 // 将 x9的值（构造的 SPSR）写入 SPSR_EL3寄存器。
+	// SPSR_EL3保存了 ​返回后的 CPU 状态​（包括异常级别、中断标志等）。
+	// 执行 eret后，CPU 会从 SPSR_EL3恢复 PSTATE（包括切换到 EL1）。
 	/* BLANK END */
 	/* LAB 1 TODO 2 END */
 
@@ -266,7 +286,10 @@ BEGIN_FUNC(el1_mmu_activate)
 	mrs     x8, sctlr_el1
 	/* Enable MMU */
 	/* LAB 1 TODO 4 BEGIN */
+
 	/* BLANK BEGIN */
+	orr     x8, x8, #SCTLR_EL1_M
+	
 	/* BLANK END */
 	/* LAB 1 TODO 4 END */
 	/* Disable alignment checking */
