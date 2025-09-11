@@ -96,7 +96,7 @@ __maybe_unused static struct page * merge_chunk(struct phys_mem_pool *__maybe_un
          */
         /* BLANK BEGIN */
         struct page *buddy;
-        struct list_head *free_list;
+        
         
         // if the chunk is of the max order, cannot merge anymore
         if (chunk->order == BUDDY_MAX_ORDER - 1) {
@@ -110,8 +110,15 @@ __maybe_unused static struct page * merge_chunk(struct phys_mem_pool *__maybe_un
                 return chunk;
         }
 
+
+        // 重要！！！
+        /* The buddy_chunk is not free as a whole, no further merge is required.
+         */
+        if (buddy->order != chunk->order)
+                return chunk;
+
+
         // remove the buddy chunk from the free list
-        free_list = &pool->free_lists[buddy->order].free_list;
         list_del(&buddy->node);
         pool->free_lists[buddy->order].nr_free -= 1;
 
