@@ -28,12 +28,14 @@ struct tee_shm_private {
 #endif /* CHCORE_OPENTRUSTEE */
 
 /* This struct represents some physical memory resource */
+// 注：PMO是 *独立于进程的* 物理内存管理对象！
 struct pmobject {
         paddr_t start;
         size_t size;
         pmo_type_t type;
         /* record physical pages for on-demand-paging pmo */
-        struct radix *radix;
+        // radix tree适合稀疏+懒分配场景，用来记录on-demand-paging的物理页
+        struct radix *radix; // 用来存放on-demand-paging中已分配但未被访问的物理页集合
         /*
          * The field of 'private' depends on 'type'.
          * PMO_FILE: it points to fmap_fault_pool

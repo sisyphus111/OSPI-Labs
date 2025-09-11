@@ -134,12 +134,25 @@ static struct slab_header *init_slab_cache(int order, int size)
         return slab;
 }
 
+// 给某个slab_pointer选一个新的current slab
 static void choose_new_current_slab(struct slab_pointer * __maybe_unused pool)
 {
         /* LAB 2 TODO 2 BEGIN */
         /* Hint: Choose a partial slab to be a new current slab. */
         /* BLANK BEGIN */
-
+        struct list_head *partial_list;
+        partial_list = &(pool->partial_slab_list);
+        
+        if (list_empty(partial_list)){ // 这个slab_pointer已经没有partial slab了
+                pool->current_slab = NULL;
+                return;
+        }
+        
+        // 选择partial链表中的第一个slab作为新的current_slab
+        struct slab_header *new_current_slab;
+        new_current_slab = (struct slab_header *)list_entry(partial_list->next, struct slab_header, node);
+        pool->current_slab = new_current_slab;
+        list_del(partial_list->next); // 从partial链表中移除这个slab
         /* BLANK END */
         /* LAB 2 TODO 2 END */
 }
@@ -170,6 +183,18 @@ static void *alloc_in_slab_impl(int order)
          * If current slab is full, choose a new slab as the current one.
          */
         /* BLANK BEGIN */
+        free_list = (struct slab_slot_list *)current_slab->free_list_head;
+        BUG_ON(free_list == NULL);
+
+        // 更新当前slab的空闲slot链表
+        next_slot = free_list->next_free;
+        current_slab->free_list_head = (void *)next_slot;
+        current_slab->current_free_cnt -= 1;
+
+        // 如果当前slab已经分配满了，则需要选择一个新的slab作为current_slab
+        if (unlikely(current_slab->current_free_cnt == 0)) {
+                choose_new_current_slab(&slab_pool[order]);
+        }
 
         /* BLANK END */
         /* LAB 2 TODO 2 END */
@@ -245,6 +270,7 @@ void *alloc_in_slab(unsigned long size, size_t *real_size)
 {
         int order;
 
+        // 根据size选取合适的order：size过大则直接报错，过小则分配最小的order
         BUG_ON(size > order_to_size(SLAB_MAX_ORDER));
 
         order = (int)size_to_order(size);
@@ -261,6 +287,7 @@ void *alloc_in_slab(unsigned long size, size_t *real_size)
 
 void free_in_slab(void *addr)
 {
+        // 通过地址找到对应的slab和slot
         struct page *page;
         struct slab_header *slab;
         struct slab_slot_list *slot;
@@ -297,8 +324,11 @@ void free_in_slab(void *addr)
          * Hint: Free an allocated slot and put it back to the free list.
          */
         /* BLANK BEGIN */
-
-        UNUSED(slot);
+        // 将slot插回当前slab的空闲slot链表
+        slot->next_free = slab->free_list_head;
+        slab->free_list_head = (void *)slot;
+        slab->current_free_cnt += 1;
+        // UNUSED(slot);
         /* BLANK END */
         /* LAB 2 TODO 2 END */
 

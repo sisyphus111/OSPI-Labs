@@ -205,11 +205,23 @@ int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
                         /*
                          * Not committed before. Then, allocate the physical
                          * page.
+                         * 未分配，则分配一个全0物理页，加入pmo（即存入radix tree），并建立页表映射
                          */
                         /* LAB 2 TODO 7 BEGIN */
                         /* BLANK BEGIN */
                         /* Hint: Allocate a physical page and clear it to 0. */
 
+                        void *new_va = get_pages(0);
+                        long rss = 0;
+                        if (new_va == NULL) {
+                                ret = -ENOMEM;
+                                unlock(&vmspace->vmspace_lock);
+                                return ret;
+                        }
+                        pa = virt_to_phys(new_va);
+                        BUG_ON(pa == 0);
+                        /* Clear the newly allocated page */
+                        memset((void *)phys_to_virt(pa), 0, PAGE_SIZE);
                         /* BLANK END */
                         /*
                          * Record the physical page in the radix tree:
@@ -221,13 +233,15 @@ int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
                         /* Add mapping in the page table */
                         lock(&vmspace->pgtbl_lock);
                         /* BLANK BEGIN */
-
+                        map_range_in_pgtbl(vmspace->pgtbl, fault_addr, pa, PAGE_SIZE, perm, &rss);
+                        vmspace->rss += rss;
                         /* BLANK END */
                         unlock(&vmspace->pgtbl_lock);
                 } else {
                         /*
                          * pa != 0: the faulting address has be committed a
                          * physical page.
+                         * 同一进程多线程+匿名内存的情况，只需要映射一次（这里为了实现简单未做优化，映射多次也可）；其他三种都需要映射多次
                          *
                          * For concurrent page faults:
                          *
@@ -235,21 +249,29 @@ int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
                          * of the process do not need to modify the page
                          * table because a previous faulting thread will do
                          * that. (This is always true for the same process)
+                         *
                          * However, if one process map an anonymous pmo for
                          * another process (e.g., main stack pmo), the faulting
                          * thread (e.g, in the new process) needs to update its
                          * page table.
+                         *
                          * So, for simplicity, we just update the page table.
                          * Note that adding the same mapping is harmless.
                          *
                          * When type is PMO_SHM, the later faulting threads
                          * needs to add the mapping in the page table.
+                         *
                          * Repeated mapping operations are harmless.
+                         * 
                          */
                         if (pmo->type == PMO_SHM || pmo->type == PMO_ANONYM) {
                                 /* Add mapping in the page table */
                                 lock(&vmspace->pgtbl_lock);
                                 /* BLANK BEGIN */
+                                
+                                long rss = 0;
+                                map_range_in_pgtbl(vmspace->pgtbl, fault_addr, pa, PAGE_SIZE, perm, &rss);
+                                vmspace->rss += rss;
 
                                 /* BLANK END */
                                 /* LAB 2 TODO 7 END */

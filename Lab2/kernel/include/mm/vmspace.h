@@ -21,45 +21,46 @@
 
 /* This struct represents one virtual memory region inside on address space */
 struct vmregion {
-        struct list_head list_node; /* As one node of the vmr_list */
-        struct rb_node tree_node; /* As one node of the vmr_tree */
-        /* As one node of the pmo's mapping_list */
+        struct list_head list_node; /* As one node of the vmr_list of a vmspace, 用于按顺序遍历所有vmregion */
+        struct rb_node tree_node; /* As one node of the vmr_tree, 用于快速按地址查找vmregion */
+        /* As one node of the pmo's mapping_list, 用于跟踪所有映射到此PMO的vmregion */
         struct list_head mapping_list_node;
 
-        struct vmspace *vmspace;
-        vaddr_t start;
-        size_t size;
-        /* Offset of underlying pmo */
+        struct vmspace *vmspace; // 此vmregion所属的vmspace
+        vaddr_t start; // 此vmregion的起始虚拟地址
+        size_t size; // 此区域的大小（字节数）
+        /* Offset of underlying pmo 在对应PMO（物理内存对象）中的偏移量 */
         size_t offset;
-        vmr_prop_t perm;
-        struct pmobject *pmo;
-        struct list_head cow_private_pages;
+        vmr_prop_t perm; // 访问权限标志（如：可读、可写、可执行等）
+        struct pmobject *pmo; // 该vmregion对应的物理内存对象
+        struct list_head cow_private_pages; // Copy on Write机制的私有页链表
 };
 
 /* This struct represents one virtual address space */
 struct vmspace {
         /* List head of vmregion (vmr_list) */
-        struct list_head vmr_list;
+        struct list_head vmr_list; // vmregion组成的链表，用于顺序遍历
         /* rbtree root node of vmregion (vmr_tree) */
-        struct rb_root vmr_tree;
+        struct rb_root vmr_tree; // vmregion组成的红黑树，用于按地址快速查找
 
         /* Root page table */
         void *pgtbl;
         /* Address space ID for avoiding TLB conflicts */
-        unsigned long pcid;
+        unsigned long pcid; // 进程上下文id，用于避免TLB冲突
 
-        /* The lock for manipulating vmregions */
+        /* The lock for manipulating vmregions 上锁保护vmregion的增删改操作 */
         struct lock vmspace_lock;
-        /* The lock for manipulating the page table */
+        /* The lock for manipulating the page table 上锁保护页表操作 */
         struct lock pgtbl_lock;
 
         /*
          * For TLB flushing:
          * Record the all the CPU that a vmspace ran on.
+         * 记录此vmspace曾在哪些CPU上运行过，这些CPU需要刷新TLB
          */
         unsigned char history_cpus[PLAT_CPU_NUM];
 
-        struct vmregion *heap_boundary_vmr;
+        struct vmregion *heap_boundary_vmr; // 堆区域的边界vmregion，用于堆的动态扩展
 
         /* Records size of memory mapped. Protected by pgtbl_lock. */
         long rss;

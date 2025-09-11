@@ -18,6 +18,7 @@
 /*
  * order range: [SLAB_MIN_ORDER, SLAB_MAX_ORDER]
  * ChCore prepares the slab for each order in the range.
+ * 定义了slab分配器允许操纵的内存块大小
  */
 #define SLAB_MIN_ORDER (5)
 #define SLAB_MAX_ORDER (11)
@@ -28,13 +29,13 @@
 /* slab_header resides in the beginning of each slab (i.e., occupies the first slot). */
 struct slab_header {
         /* The list of free slots, which can be converted to struct slab_slot_list. */
-        void *free_list_head;
+        void *free_list_head; // 空闲slot链表的头节点
         /* Partial slab list. */
-        struct list_head node;
+        struct list_head node; // 这个slab对应的节点，用来加入/移出partial链表
 
-        int order;
-        unsigned short total_free_cnt; /* MAX: 65536 */
-        unsigned short current_free_cnt;
+        int order; // 这个slab的总大小，以2的order次幂表示
+        unsigned short total_free_cnt; /* MAX: 65536 */ // 这个slab中总的空闲slot数量
+        unsigned short current_free_cnt; // 当前的空闲slot数量
 };
 
 /* Each free slot in one slab is regarded as slab_slot_list. */
@@ -42,9 +43,9 @@ struct slab_slot_list {
         void *next_free;
 };
 
-struct slab_pointer {
-        struct slab_header *current_slab;
-        struct list_head partial_slab_list;
+struct slab_pointer { // order相同的有空闲空间的slab组成的数据结构，order不同的多个slab_pointer（1个order对应1个pointer）组成slab_pool池
+        struct slab_header *current_slab; // 当前正在被分配的slab
+        struct list_head partial_slab_list; // 部分使用（仍有空间）的候补slab链表
 };
 
 /* All interfaces are kernel/mm module internal interfaces. */

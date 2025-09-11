@@ -158,7 +158,7 @@ typedef union {
                     ignored         : 1;
         } l3_page;
         u64 pte;
-} pte_t;
+} pte_t; // 页表项，可以是页表项（table，指向下级页表）、块项（block，即大页）或页项（page，即4KiB页）
 // clang-format on
 
 #define PTE_DESCRIPTOR_INVALID                    (0)
@@ -166,6 +166,6 @@ typedef union {
 /* page_table_page type */
 typedef struct {
 	pte_t ent[PTP_ENTRIES];
-} ptp_t;
+} ptp_t; // 页表页——由page table entry组成的数组
 
 #endif /* ARCH_AARCH64_ARCH_MM_PAGE_TABLE_H */
