@@ -1,19 +1,44 @@
 {
 	"name": "OS-Course-Lab-Dev",
-	"build": { "dockerfile": "Dockerfile" },
+	"build": { 
+		"dockerfile": "Dockerfile",
+		"args": {
+			"HTTP_PROXY": "http://host.docker.internal:30270",
+			"HTTPS_PROXY": "http://host.docker.internal:30270",
+			"NO_PROXY": "localhost,127.0.0.1,::1,host.docker.internal"
+		}
+	},
 	"remoteUser": "stu",
 	"updateRemoteUserUID": true,
-	"runArgs": ["--hostname", "Chcore"],
+	"runArgs": [
+		"--hostname", "Chcore",
+		"--env", "HTTP_PROXY=http://host.docker.internal:30270",
+		"--env", "HTTPS_PROXY=http://host.docker.internal:30270",
+		"--env", "NO_PROXY=localhost,127.0.0.1,::1,host.docker.internal"
+	],
+	"remoteEnv": {
+		"HTTP_PROXY": "http://host.docker.internal:30270",
+		"HTTPS_PROXY": "http://host.docker.internal:30270",
+		"NO_PROXY": "localhost,127.0.0.1,::1,host.docker.internal"
+	},
 	"customizations": {
 		"vscode": {
-		"extensions": [
-			"ms-vscode.cpptools",
-			"ms-vscode.hexeditor",
-			"llvm-vs-code-extensions.vscode-clangd",
-			"ms-vscode.makefile-tools",
-			"twxs.cmake",
-			"dan-c-underwood.arm"
-		]
+			"extensions": [
+				"ms-vscode.cpptools",
+				"ms-vscode.hexeditor",
+				"llvm-vs-code-extensions.vscode-clangd",
+				"ms-vscode.makefile-tools",
+				"twxs.cmake",
+				"dan-c-underwood.arm",
+				"github.copilot",
+				"github.copilot-chat"
+			],
+			"settings": {
+				"http.proxy": "http://host.docker.internal:30270",
+				"https.proxy": "http://host.docker.internal:30270",
+				"github.copilot.proxy": "http://host.docker.internal:30270",
+				"http.proxyStrictSSL": false
+			}
+		}
 	}
-  }
 }
