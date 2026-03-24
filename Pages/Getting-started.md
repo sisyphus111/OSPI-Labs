@@ -4,11 +4,11 @@
 
 ## 环境准备
 
-对于所有的操作系统，本实验必须依赖Docker环境且仅能在Linux系统上进行运行(我们不支持Mac OS系统)，
+对于所有的操作系统，本实验必须依赖Docker环境且被期望用户只在Linux系统上进行运行(我们不主动维护Mac OS系统，如果有问题请主动发送issue)，
 请按照Docker官方指示为你运行的操作系统安装对应的Docker发行版。
 
 > [!IMPORTANT] 关于Docker
-> 由于中国大陆地区的网络限制，请确保你的docker能够连接到DockerHub，测试方法可以使用 `docker pull nginx:latest`，如果无法访问，您可以依照[该文档](https://docs.docker.com/engine/daemon/)为你的docker daemon添加代理规则。如果你缺少代理，你可以使用这个以下的几个链接：  [百度云(提取uwuv)](https://pan.baidu.com/s/1ipbMZ-C1Qk0S9PGDDMMy6w) [交大云(仅上海交通大学内部可以访问)](https://jbox.sjtu.edu.cn/l/l1Fe9X)。  
+> 由于中国大陆地区的网络限制，请确保你的docker能够连接到DockerHub，测试方法可以使用 `docker pull nginx:latest`，如果无法访问，您可以依照[该文档](https://docs.docker.com/engine/daemon/)为你的docker daemon添加代理规则。如果你缺少代理，你可以使用这个以下的几个链接：  [百度云(提取uwuv)](https://pan.baidu.com/s/1ipbMZ-C1Qk0S9PGDDMMy6w) [交大云(仅上海交通大学内部可以访问)](https://pan.sjtu.edu.cn/web/share/87b5f222c2b18c65cb2785be314b5e08)。  
 > 下载压缩好的Docker镜像，镜像使用`gzip`解压缩镜像文件到标准输出流之后再由docker进行导入（下方的yy.mm请以当前的大版本号替换，如版本tag为24.09.1则请将yy.mm替换成24.09）。
 >
 > ```
@@ -31,6 +31,10 @@
 
 如果你使用的是带有支持Microsoft规范下[Dev-Container](https://vscode.github.net.cn/docs/devcontainers/tutorial)插件的代码编辑器或者集成开发环境，亦或者你使用的是非Linux平台的开发环境，我们**强烈建议**你使用Dev-container直接进行开发，我们已经在其中已经预先安装好了你可能需要使用的所有工具链。并且针对vscode我们在每个Lab的分支目录下都已经配置好了合适的插件配置，简单安装即可以一键启用。安装完之后进入本实验的**根目录**，此时dev-container会识别到容器开发环境，重新进入后就可以直接使用了。
 
+
+> [!BUG] 关于MacOS
+> MacOS 26后苹果使用了新的虚拟机引擎，其会影响qemu-user的兼容性，请按照以下的[指令](https://romanzipp.com/blog/maocs-sequoia-docker-resetta-is-only-intended-to-run-silicon)进行关闭。
+
 > [!BUG] 关于Windows  
 > 在MacOS平台，使用dev-container能够保证兼容性。但在Windows上面由于文件系统并非POSIX兼容，你需要执行以下的方式来正确拉取repo.
 >
@@ -39,6 +43,14 @@
 > 3. 使用git clone -c core.symlinks true 进行clone
 > 4. 在完成lab3-5时请将`user/chcore-libc/libchcore/cmake/do_override_dir.sh`中所有的`ln -sf`替换成`cp -r`
 > 5. 对于所有`libchcore`下的所有文件，请都运行`make clean`确保其生效
+>
+> 如果你是新用户，请使用以下命令进行拉取。
+>
+> ```
+> git clone -c core.symlinks=true https://github.com/SJTU-IPADS/OS-Course-Lab.git
+> ```
+
+
 
 ## 文档说明
 
